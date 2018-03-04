@@ -1,0 +1,20 @@
+{
+  "name": "vbpupil/html_analyzer",
+  "description": "analyze website, find broken links and generate sitemaps.",
+  "license": "proprietary",
+  "authors": [
+    {
+      "name": "Dean Haines",
+      "email": "vbpupil@gmail.com"
+    }
+  ],
+  "require": {
+    "guzzlehttp/guzzle": "6.3.*",
+    "monolog/monolog": "1.9.*"
+  },
+  "autoload": {
+    "psr-4": {
+      "vbpupil\\" : "src/"
+    }
+  }
+}
