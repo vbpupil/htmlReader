@@ -5,42 +5,57 @@ include 'vendor/autoload.php';
 use GuzzleHttp\Client;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
-use vbpupil\src\urlValidator;
+use vbpupil\Filename;
+use vbpupil\HtmlReader;
+use vbpupil\UrlValidator;
 
-$log = new Logger('logger');
-$log->pushHandler(new StreamHandler('logs/ukstoves.log', Logger::INFO));
-$log->info('Starting');
+$logPath = __DIR__ . '/logs/';
 
-$url = new urlValidator('http://www.ukstoves.co.uk/');
-$urlFull = "{$url['scheme']}://{$url['host']}";
+try {
+    $url = (new UrlValidator)->validate('https://www.ukstoves.co.uk/');
+    $log = new Logger('html Reader');
+    $filename = Filename::urlToFilename($url['full'], '.log', true);
+    $log->pushHandler(new StreamHandler($logPath . $filename, Logger::INFO));
+} catch (Exception $e) {
+    $log->info($e->getMessage());
+}
 
-var_dump($url); die;
 
 $checklist = [$url['host']];
 $checked = [];
+$checkedImages = [];
+
+$log->info('Starting');
 
 while (!empty($checklist)) {
+    $HtmlReader = new HtmlReader($url['full']);
+
     $log->info("performing GET on {$checklist[0]}");
 
     $client = new Client();
     $res = $client->request('GET', $checklist[0]);
-    array_push($checked,$checklist[0]);
+
+    array_push($checked, $checklist[0]);
 
     if ($res->getStatusCode() == 200) {
         $results = [];
 
-        $body = $res->getBody();
+        $HtmlReader->setBody($res->getBody());
+        $HtmlReader->setDomDoc(new DOMDocument());
+ 
+//         $dom->loadHTML($HtmlReader->getBody());
+        $dom = $HtmlReader->getDomDoc();
 
-        $dom = new DOMDocument();
-        $dom->loadHTML($body);
+
+        //MOVE INTO scanner class
         foreach ($dom->getElementsByTagName('a') AS $node) {
             $a = $node->getAttribute('href');
 
             if ((strpos($a, $url['host']) !== false) || preg_match('~^\/~', $a)) {
-                if(!in_array($checked, $a)) {
-                    $results[$url['path']]['local'][] = (preg_match('~^\/~', $a) ? $urlFull . $a : $a);
+                if (!in_array($checked, $a)) {
+                    $results[$url['path']]['local'][] = (preg_match('~^\/~', $a) ? $url['full'] . $a : $a);
                     $log->info("adding 'A' {$a}");
-                    array_push($checklist, (preg_match('~^\/~', $a) ? $urlFull . $a : $a));
+                    array_push($checklist, (preg_match('~^\/~', $a) ? $url['full'] . $a : $a));
                 }
             } else {
                 if (!empty($a))
@@ -48,11 +63,36 @@ while (!empty($checklist)) {
             }
         }
 
+
+        /*getting images*/
+/*
+                foreach ($dom->getElementsByTagName('img') AS $node) {
+                    $img = $node->getAttribute('src');
+                    $secure = ($HtmlReader->isASecurePath($img) ? 'SECURE' : 'INSECURE');
+
+                    if ((strpos($img, $url['host']) !== false) || preg_match('~^\/~', $img)) {
+                        if (!in_array($checkedImages, $img)) {
+                            $results[$url['path']]['images']['local'][] = (preg_match('~^\/~', $img) ? $url['full'] . $img : $img);
+                        }
+                    } else {
+                        if (!empty($img)) {
+                            //foreign image located.
+                            $results[$url['path']]['images']['foreign'][] = $img;
+                        }
+                    }
+
+                    $log->info("local {$secure} image located {$img}");
+                }
+*/
+
+
         foreach ($results as $k => $v) {
             foreach ($v AS $kk => $vv) {
                 $results[$k][$kk] = array_unique($results[$k][$kk]);
             }
         }
+    }else{
+        //log a 404
     }
 
     array_shift($checklist);
