@@ -102,8 +102,38 @@ class HtmlReader
                 return true;
             }
 
-            if(preg_match('~^\/~', $path)){
-                return $this->isASecurePath($this->url.$path);
+            if (preg_match('~^\/~', $path)) {
+                return $this->isASecurePath($this->url . $path);
+            }
+        }
+    }
+
+    protected function searchDom($element = 'a', $attribute = 'href')
+    {
+        if (isset($this->body)) {
+            $result = array();
+
+            foreach ($this->domDoc->getElementsByTagName($element) AS $node) {
+                $result[] = $node->getAttribute($attribute);
+            }
+
+            return $result;
+        }
+    }
+
+    public function search($element = 'a', $attribute = 'href')
+    {
+
+        foreach ($this->searchDom($element, $attribute) AS $r) {
+            if ((strpos($r, $url['host']) !== false) || preg_match('~^\/~', $r)) {
+                if (!in_array($checked, $r)) {
+                    $results[$url['path']]['local'][] = (preg_match('~^\/~', $r) ? $url['full'] . $r : $r);
+                    $log->info("adding '{$element}' {$r}");
+                    array_push($checklist, (preg_match('~^\/~', $r) ? $url['full'] . $r : $r));
+                }
+            } else {
+                if (!empty($r))
+                    $results[$url['path']]['foreign'][] = $r;
             }
         }
     }

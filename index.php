@@ -13,11 +13,11 @@ $logPath = __DIR__ . '/logs/';
 
 try {
     $url = (new UrlValidator)->validate('https://www.ukstoves.co.uk/');
-    $log = new Logger('html Reader');
-    $filename = Filename::urlToFilename($url['full'], '.log', true);
-    $log->pushHandler(new StreamHandler($logPath . $filename, Logger::INFO));
+//    $log = new Logger('html Reader');
+//    $filename = Filename::urlToFilename($url['full'], '.log', true);
+//    $log->pushHandler(new StreamHandler($logPath . $filename, Logger::INFO));
 } catch (Exception $e) {
-    $log->info($e->getMessage());
+//    $log->info($e->getMessage());
 }
 
 
@@ -25,12 +25,12 @@ $checklist = [$url['host']];
 $checked = [];
 $checkedImages = [];
 
-$log->info('Starting');
+//$log->info('Starting');
 
 while (!empty($checklist)) {
     $HtmlReader = new HtmlReader($url['full']);
 
-    $log->info("performing GET on {$checklist[0]}");
+//    $log->info("performing GET on {$checklist[0]}");
 
     $client = new Client();
     $res = $client->request('GET', $checklist[0]);
@@ -47,21 +47,7 @@ while (!empty($checklist)) {
         $dom = $HtmlReader->getDomDoc();
 
 
-        //MOVE INTO scanner class
-        foreach ($dom->getElementsByTagName('a') AS $node) {
-            $a = $node->getAttribute('href');
 
-            if ((strpos($a, $url['host']) !== false) || preg_match('~^\/~', $a)) {
-                if (!in_array($checked, $a)) {
-                    $results[$url['path']]['local'][] = (preg_match('~^\/~', $a) ? $url['full'] . $a : $a);
-                    $log->info("adding 'A' {$a}");
-                    array_push($checklist, (preg_match('~^\/~', $a) ? $url['full'] . $a : $a));
-                }
-            } else {
-                if (!empty($a))
-                    $results[$url['path']]['foreign'][] = $a;
-            }
-        }
 
 
         /*getting images*/
@@ -98,4 +84,4 @@ while (!empty($checklist)) {
     array_shift($checklist);
 }
 
-var_dump($results);
+//var_dump($results);
