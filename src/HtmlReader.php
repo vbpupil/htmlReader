@@ -12,7 +12,6 @@ namespace vbpupil;
 
 class HtmlReader
 {
-
     /**
      * @var string
      */
@@ -28,6 +27,26 @@ class HtmlReader
      * @var
      */
     protected $domDoc;
+
+    /**
+     * @var array
+     */
+    protected $checked = array();
+
+    /**
+     * @var array
+     */
+    protected $checklist = array();
+
+    /**
+     * @var array
+     */
+    protected $checkedImages = array();
+
+    /**
+     * @var array
+     */
+    protected $results = array();
 
 
     public function __construct($url)
@@ -55,9 +74,9 @@ class HtmlReader
     /**
      * @return string
      */
-    public function getUrl()
+    public function getUrl($type = 'full')
     {
-        return $this->url;
+        return $this->url[$type];
     }
 
     /**
@@ -98,7 +117,7 @@ class HtmlReader
             }
 
             //check if the resource is located on our site
-            if (strpos($path, $this->getUrl()) !== false && preg_match('~^https~', $this->getUrl())) {
+            if (strpos($path, $this->getUrl('full')) !== false && preg_match('~^https~', $this->getUrl('full'))) {
                 return true;
             }
 
@@ -108,6 +127,11 @@ class HtmlReader
         }
     }
 
+    /**
+     * @param string $element
+     * @param string $attribute
+     * @return array
+     */
     protected function searchDom($element = 'a', $attribute = 'href')
     {
         if (isset($this->body)) {
@@ -117,25 +141,26 @@ class HtmlReader
                 $result[] = $node->getAttribute($attribute);
             }
 
-            return $result;
+            return array_unique($result);
         }
     }
 
     public function search($element = 'a', $attribute = 'href')
     {
-
         foreach ($this->searchDom($element, $attribute) AS $r) {
-            if ((strpos($r, $url['host']) !== false) || preg_match('~^\/~', $r)) {
-                if (!in_array($checked, $r)) {
-                    $results[$url['path']]['local'][] = (preg_match('~^\/~', $r) ? $url['full'] . $r : $r);
-                    $log->info("adding '{$element}' {$r}");
-                    array_push($checklist, (preg_match('~^\/~', $r) ? $url['full'] . $r : $r));
+            if (((strpos($r, $this->getUrl('host')) !== false) || preg_match('~^\/~', $r))) {
+//                if(preg_match('~^(?=^\/)(?!.*www).*~', $r)){
+                if (!in_array($this->checked, $r)) {
+                    $this->results[$this->getUrl('path')]['local'][] = (preg_match('~^\/~', $r) ? $this->getUrl('full') . $r : $r);
+                    array_push($this->checklist, (preg_match('~^\/~', $r) ? $this->getUrl('full') . $r : $r));
                 }
             } else {
                 if (!empty($r))
-                    $results[$url['path']]['foreign'][] = $r;
+                    $this->results[$this->getUrl('path')]['foreign'][] = $r;
             }
         }
+
+        return $this->results;
     }
 
 
