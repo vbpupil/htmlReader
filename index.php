@@ -2,29 +2,28 @@
 
 include 'vendor/autoload.php';
 
-use GuzzleHttp\Client;
-use Monolog\Handler\StreamHandler;
-use Monolog\Logger;
-use vbpupil\Filename;
 use vbpupil\HtmlReader;
 use vbpupil\UrlValidator;
 
 $logPath = __DIR__ . '/logs/';
 
 try {
-    $url = (new UrlValidator)->validate('https://www.ukstoves.co.uk/');
-    $HtmlReader = new HtmlReader($url);
-    $client = new Client();
-    $res = $client->request('GET', $url['full']);
+    $url = (new UrlValidator)->validate('https://www.ukstoves.co.uk');
 
-    if ($res->getStatusCode() == 200) {
-        $HtmlReader->setBody($res->getBody());
-        $HtmlReader->setDomDoc(new DOMDocument());
-        var_dump($HtmlReader->search('img', 'src'));
-    }
+    $HtmlReader = (new HtmlReader(
+        $url,
+        new GuzzleHttp\Client()
+    ))
+        ->connect();
+
+    $HtmlReader->setBody()
+        ->setDomDoc(new DOMDocument());
+
+    var_dump($HtmlReader->search('img', 'src'));
+
 
 } catch (Exception $e) {
-
+    echo $e->getMessage();
 }
 
 //$checklist = [$url['host']];

@@ -15,6 +15,16 @@ class HtmlReader
     /**
      * @var string
      */
+    protected $headers;
+
+    /**
+     * @var
+     */
+    protected $webClient;
+
+    /**
+     * @var string
+     */
     protected $url;
 
     /**
@@ -49,9 +59,12 @@ class HtmlReader
     protected $results = array();
 
 
-    public function __construct($url)
+    public function __construct($url, \GuzzleHttp\Client $client)
     {
         $this->setUrl($url);
+        $this->webClient = $client;
+
+        return $this;
     }
 
     /**
@@ -69,6 +82,8 @@ class HtmlReader
     {
         $this->domDoc = $domDoc;
         $this->domDoc->loadHTML($this->getBody());
+
+        return $this;
     }
 
     /**
@@ -96,13 +111,38 @@ class HtmlReader
     }
 
     /**
-     * @param string $body
      */
-    public function setBody($body)
+    public function setBody()
     {
-        $this->body = $body;
+        $this->body = $this->headers->getBody();
+        return $this;
     }
 
+    /**
+     * returns the page headers
+     *
+     * @return string
+     */
+    public function getHeaders()
+    {
+        return $this->headers;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getStatusCode()
+    {
+        return $this->headers->getStatusCode();
+    }
+
+
+
+    public function connect($command='GET')
+    {
+        $this->headers = $this->webClient->request('GET', $this->url['full']);
+        return $this;
+    }
 
     /**
      * @param $path the img/css/jq file path
@@ -148,8 +188,7 @@ class HtmlReader
     public function search($element = 'a', $attribute = 'href')
     {
         foreach ($this->searchDom($element, $attribute) AS $r) {
-            if (((strpos($r, $this->getUrl('host')) !== false) || preg_match('~^\/~', $r))) {
-//                if(preg_match('~^(?=^\/)(?!.*www).*~', $r)){
+            if (((strpos($r, $this->getUrl('host')) !== false) || preg_match('~^(?=^\/)(?!.*www\.).*~', $r))) {
                 if (!in_array($this->checked, $r)) {
                     $this->results[$this->getUrl('path')]['local'][] = (preg_match('~^\/~', $r) ? $this->getUrl('full') . $r : $r);
                     array_push($this->checklist, (preg_match('~^\/~', $r) ? $this->getUrl('full') . $r : $r));

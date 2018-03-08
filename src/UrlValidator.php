@@ -33,6 +33,9 @@ class urlValidator
     {
         $url = parse_url($url);
 
+        $url['full'] = "{$url['scheme']}://{$url['host']}";
+        $url['mid'] = str_replace('www.','',$url['host']);
+
         if ($this->protocol == true) {
             if (isset($url['scheme'])) {
                 if (!preg_match('~^https?~', $url['scheme'])) {
@@ -41,7 +44,7 @@ class urlValidator
             }
         }
 
-        if (!isset($url['host'])) {
+        if (!isset($url['host']) || preg_match('~^[^.]*$~', $url['mid'])) {
             throw new \Exception('Invalid URL.');
         }
 
@@ -51,7 +54,7 @@ class urlValidator
             }
         }
 
-        $url['full'] = "{$url['scheme']}://{$url['host']}";
+
 
         return $url;
     }
